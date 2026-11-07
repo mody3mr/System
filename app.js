@@ -1,15 +1,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, addDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, addDoc, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 // ⚠️ ضع إعدادات مشروعك الحقيقية هنا ⚠️
 const firebaseConfig = {
-  apiKey: "AIzaSyDQjq4pJ_zbPS8j05f7pENHUZNW2EduaIY",
-  authDomain: "system-ca72d.firebaseapp.com",
-  projectId: "system-ca72d",
-  storageBucket: "system-ca72d.firebasestorage.app",
-  messagingSenderId: "48224129684",
-  appId: "1:48224129684:web:498d7055a253196f831a81"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -24,14 +24,16 @@ const dashboardSection = document.getElementById('dashboard-section');
 const navLinks = {
     home: document.getElementById('nav-home'),
     products: document.getElementById('nav-products'),
-    inventory: document.getElementById('nav-inventory'), // زر المخزون الجديد
+    inventory: document.getElementById('nav-inventory'),
+    categories: document.getElementById('nav-categories'), // زر التصنيفات الجديد
     sales: document.getElementById('nav-sales'),
     purchases: document.getElementById('nav-purchases')
 };
 const sections = {
     home: document.getElementById('section-home'),
     products: document.getElementById('section-products'),
-    inventory: document.getElementById('section-inventory'), // قسم المخزون الجديد
+    inventory: document.getElementById('section-inventory'),
+    categories: document.getElementById('section-categories'), // قسم التصنيفات الجديد
     sales: document.getElementById('section-sales'),
     purchases: document.getElementById('section-purchases')
 };
@@ -49,8 +51,8 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         loginSection.style.display = 'none';
         dashboardSection.style.display = 'flex';
-        document.getElementById('current-user-role').textContent = `مرحباً بك في النظام`;
         initCharts();
+        loadCategories(); // تحميل التصنيفات
         loadProductsAndInventory();
         loadDashboardStats(); 
     } else {
@@ -68,6 +70,46 @@ document.getElementById('nav-logout').addEventListener('click', (e) => {
     e.preventDefault(); signOut(auth);
 });
 
+// ================= إدارة التصنيفات =================
+const modalAddCategory = document.getElementById('modal-add-category');
+document.getElementById('btn-open-add-category').addEventListener('click', () => modalAddCategory.style.display='flex');
+document.getElementById('btn-close-cat-modal').addEventListener('click', () => modalAddCategory.style.display='none');
+
+document.getElementById('form-add-category').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+        await addDoc(collection(db, "categories"), {
+            name: document.getElementById('cat-name').value,
+            desc: document.getElementById('cat-desc').value
+        });
+        document.getElementById('form-add-category').reset();
+        modalAddCategory.style.display='none';
+        alert("تم إضافة التصنيف!");
+    } catch(err) { console.error(err); }
+});
+
+function loadCategories() {
+    onSnapshot(collection(db, "categories"), (snapshot) => {
+        const catTable = document.getElementById('categories-table-body');
+        const prodCatSelect = document.getElementById('prod-category');
+        catTable.innerHTML = '';
+        prodCatSelect.innerHTML = '<option value="">اختر التصنيف...</option>';
+
+        snapshot.forEach(doc => {
+            const c = doc.data();
+            catTable.innerHTML += `<tr><td>${c.name}</td><td>${c.desc || '-'}</td><td><button class="btn-danger" onclick="deleteCategory('${doc.id}')">حذف</button></td></tr>`;
+            prodCatSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+        });
+    });
+}
+
+// دالة حذف التصنيف
+window.deleteCategory = async (id) => {
+    if(confirm("هل أنت متأكد من حذف هذا التصنيف؟")) {
+        await deleteDoc(doc(db, "categories", id));
+    }
+};
+
 // ================= إدارة المنتجات والمخزون =================
 let globalProducts = [];
 const productsTableBody = document.getElementById('products-table-body');
@@ -76,9 +118,8 @@ const saleSelect = document.getElementById('sale-product-select');
 const purchaseSelect = document.getElementById('purchase-product-select');
 
 document.getElementById('btn-open-add-product').addEventListener('click', () => document.getElementById('modal-add-product').style.display='flex');
-document.getElementById('btn-close-modal').addEventListener('click', () => document.getElementById('modal-add-product').style.display='none');
+document.getElementById('btn-close-prod-modal').addEventListener('click', () => document.getElementById('modal-add-product').style.display='none');
 
-// تسجيل منتج جديد (الكمية الافتراضية = صفر)
 document.getElementById('form-add-product').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
@@ -87,16 +128,15 @@ document.getElementById('form-add-product').addEventListener('submit', async (e)
             name: document.getElementById('prod-name').value,
             category: document.getElementById('prod-category').value,
             price: parseFloat(document.getElementById('prod-price').value),
-            quantity: 0, // الرصيد يبدأ بصفر أوتوماتيك
+            quantity: 0, 
             createdAt: new Date()
         });
         document.getElementById('form-add-product').reset();
         document.getElementById('modal-add-product').style.display='none';
-        alert("تم حفظ المنتج بنجاح برصيد 0. يرجى تسجيل فاتورة شراء لزيادة الرصيد.");
-    } catch (err) { alert("حدث خطأ أثناء حفظ المنتج"); }
+        alert("تم حفظ المنتج بنجاح.");
+    } catch (err) { alert("حدث خطأ"); }
 });
 
-// جلب المنتجات للمنتجات وللمخزون في نفس الوقت
 function loadProductsAndInventory() {
     onSnapshot(collection(db, "products"), (snapshot) => {
         productsTableBody.innerHTML = ''; 
@@ -108,19 +148,29 @@ function loadProductsAndInventory() {
         snapshot.forEach((doc) => {
             const p = doc.data(); p.id = doc.id; globalProducts.push(p);
             
-            // 1. جدول المنتجات (بدون كمية)
-            productsTableBody.innerHTML += `<tr><td>${p.code}</td><td>${p.name}</td><td>${p.category}</td><td>${p.price} ج.م</td></tr>`;
+            // جدول المنتجات (مع زر حذف)
+            productsTableBody.innerHTML += `<tr><td>${p.code}</td><td>${p.name}</td><td>${p.category}</td><td>${p.price} ج.م</td><td><button class="btn-danger" onclick="deleteProduct('${p.id}', ${p.quantity})">حذف</button></td></tr>`;
             
-            // 2. جدول المخزون (يركز على الكميات فقط)
+            // جدول المخزون
             let stockBadge = p.quantity > 10 ? '<span class="stock-badge stock-good">متوفر</span>' : (p.quantity > 0 ? '<span class="stock-badge stock-warning">أوشك على الانتهاء</span>' : '<span class="stock-badge stock-danger">نفذ من المخزن</span>');
             inventoryTableBody.innerHTML += `<tr><td>${p.code}</td><td><strong>${p.name}</strong></td><td style="font-size:18px; font-weight:bold;">${p.quantity}</td><td>${stockBadge}</td></tr>`;
             
-            // قوائم الشراء والبيع
             purchaseSelect.innerHTML += `<option value="${p.id}">${p.name} (متوفر حالياً: ${p.quantity})</option>`;
             if (p.quantity > 0) saleSelect.innerHTML += `<option value="${p.id}">${p.name} (متوفر: ${p.quantity})</option>`;
         });
     });
 }
+
+// دالة الحذف الآمن للمنتج (ترفض الحذف لو فيه رصيد)
+window.deleteProduct = async (id, qty) => {
+    if(qty > 0) {
+        alert("لا يمكن حذف منتج له رصيد في المخزن! قم بصرفه أولاً عبر فاتورة بيع أو تسوية.");
+        return;
+    }
+    if(confirm("هل أنت متأكد من حذف هذا المنتج نهائياً من النظام؟")) {
+        await deleteDoc(doc(db, "products", id));
+    }
+};
 
 // ================= المبيعات (نقص المخزون) =================
 let salesCart = [];
@@ -129,7 +179,6 @@ document.getElementById('btn-add-to-cart').addEventListener('click', () => {
     if(!pId || qty<=0) return;
     const p = globalProducts.find(x => x.id === pId);
     
-    // منع البيع بأكثر من المتاح في المخزن
     const currentInCart = salesCart.find(i => i.id === pId)?.qty || 0;
     if ((currentInCart + qty) > p.quantity) return alert("الكمية المطلوبة تتخطى رصيد المخزن المتاح!");
 
@@ -153,7 +202,6 @@ document.getElementById('btn-complete-sale').addEventListener('click', async () 
     const totalSale = parseInt(document.getElementById('cart-total').textContent);
     await addDoc(collection(db, "sales"), { items: salesCart, total: totalSale, date: new Date() });
     
-    // الصرف من المخزن (-)
     for (const item of salesCart) {
         const pDb = globalProducts.find(x => x.id === item.id);
         await updateDoc(doc(db, "products", item.id), { quantity: pDb.quantity - item.qty });
@@ -189,14 +237,12 @@ document.getElementById('btn-complete-purchase').addEventListener('click', async
     const totalPurchase = parseInt(document.getElementById('purchase-cart-total').textContent);
     await addDoc(collection(db, "purchases"), { items: purchaseCart, total: totalPurchase, date: new Date() });
     
-    // الإضافة للمخزن (+)
     for (const item of purchaseCart) {
         const pDb = globalProducts.find(x => x.id === item.id);
         await updateDoc(doc(db, "products", item.id), { quantity: pDb.quantity + item.qty });
     }
     alert('تم الشراء وتم إضافة الكميات للمخزن بنجاح!'); purchaseCart = []; updatePurchaseUI(); document.getElementById('purchase-qty').value = 1; document.getElementById('purchase-cost').value = 0;
 });
-
 
 // ================= إحصائيات الصفحة الرئيسية الحية =================
 function loadDashboardStats() {
