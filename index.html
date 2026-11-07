@@ -62,6 +62,10 @@
         .sales-container { display: flex; gap: 20px; flex-wrap: wrap; }
         .sales-form-box { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-width: 300px; }
         .cart-box { flex: 2; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-width: 300px; }
+        .stock-badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; }
+        .stock-good { background-color: #d4edda; color: #155724; }
+        .stock-warning { background-color: #fff3cd; color: #856404; }
+        .stock-danger { background-color: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
@@ -102,8 +106,6 @@
                 <li><a href="#" id="nav-purchases"><i class="fas fa-shopping-bag"></i> عمليات الشراء</a></li>
                 <li><a href="#" id="nav-inventory"><i class="fas fa-box"></i> المخزون</a></li>
                 <li><a href="#" id="nav-products"><i class="fas fa-tags"></i> المنتجات</a></li>
-                <li><a href="#" id="nav-categories"><i class="fas fa-list"></i> التصنيفات</a></li>
-                <li><a href="#" id="nav-settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
                 <li class="logout-link"><a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> تسجيل خروج</a></li>
             </ul>
         </aside>
@@ -135,16 +137,7 @@
                                 <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="purchases-red">0</span> ج.م</div>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <h4>إجمالي الديون</h4>
-                            <div class="card-values">
-                                <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="debts-green">0</span> ج.م</div>
-                                <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="debts-red">0</span> ج.م</div>
-                            </div>
-                        </div>
-                        <!-- يمكنك إضافة كروت الأوردرات والموظفين لاحقاً -->
                     </div>
-
                     <div class="charts-grid">
                         <div class="chart-box">
                             <h3>مخطط عمليات البيع</h3>
@@ -157,10 +150,10 @@
                     </div>
                 </div>
 
-                <!-- 2. المنتجات -->
+                <!-- 2. المنتجات (فقط بيانات المنتج وسعره، بدون كميات) -->
                 <div id="section-products" class="dashboard-section-content" style="display: none;">
                     <div class="section-header">
-                        <h2><i class="fas fa-tags"></i> إدارة المنتجات</h2>
+                        <h2><i class="fas fa-tags"></i> دليل المنتجات</h2>
                         <button class="btn-primary" id="btn-open-add-product" style="width: auto; padding: 10px 20px;">+ إضافة منتج جديد</button>
                     </div>
                     <div class="table-container">
@@ -169,7 +162,7 @@
                                 <tr>
                                     <th>كود المنتج</th>
                                     <th>اسم المنتج</th>
-                                    <th>الكمية بالمخزن</th>
+                                    <th>التصنيف</th>
                                     <th>سعر البيع</th>
                                 </tr>
                             </thead>
@@ -178,10 +171,30 @@
                     </div>
                 </div>
 
-                <!-- 3. المبيعات -->
+                <!-- 3. المخزون (الكميات وأرصدة المنتجات فقط) -->
+                <div id="section-inventory" class="dashboard-section-content" style="display: none;">
+                    <div class="section-header">
+                        <h2><i class="fas fa-box"></i> أرصدة المخزون</h2>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>كود المنتج</th>
+                                    <th>اسم المنتج</th>
+                                    <th>الكمية المتوفرة</th>
+                                    <th>حالة المخزون</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. المبيعات -->
                 <div id="section-sales" class="dashboard-section-content" style="display: none;">
                     <div class="section-header">
-                        <h2><i class="fas fa-shopping-cart"></i> إنشاء فاتورة بيع (نقص المخزون)</h2>
+                        <h2><i class="fas fa-shopping-cart"></i> إنشاء فاتورة بيع (صرف من المخزن)</h2>
                     </div>
                     <div class="sales-container">
                         <div class="sales-form-box">
@@ -211,10 +224,10 @@
                     </div>
                 </div>
 
-                <!-- 4. المشتريات (جديد) -->
+                <!-- 5. المشتريات -->
                 <div id="section-purchases" class="dashboard-section-content" style="display: none;">
                     <div class="section-header">
-                        <h2><i class="fas fa-shopping-bag"></i> تسجيل فاتورة شراء (زيادة المخزون)</h2>
+                        <h2><i class="fas fa-shopping-bag"></i> تسجيل فاتورة شراء (إضافة للمخزن)</h2>
                     </div>
                     <div class="sales-container">
                         <div class="sales-form-box">
@@ -256,18 +269,17 @@
         </main>
     </div>
 
-    <!-- نافذة إضافة منتج -->
+    <!-- نافذة إضافة منتج (تمت إزالة الكمية منها، يبدأ بـ صفر أوتوماتيك) -->
     <div id="modal-add-product" class="modal-overlay">
         <div class="modal-content">
-            <h3>إضافة منتج جديد للمخزن</h3>
+            <h3>تعريف منتج جديد</h3>
             <form id="form-add-product">
                 <div class="input-group"><label>كود المنتج</label><input type="text" id="prod-code" required></div>
                 <div class="input-group"><label>الاسم</label><input type="text" id="prod-name" required></div>
                 <div class="input-group"><label>التصنيف</label><input type="text" id="prod-category" required></div>
-                <div class="input-group"><label>الكمية المبدئية</label><input type="number" id="prod-qty" required></div>
-                <div class="input-group"><label>سعر البيع</label><input type="number" id="prod-price" required></div>
+                <div class="input-group"><label>سعر البيع الافتراضي</label><input type="number" id="prod-price" required></div>
                 <div class="modal-actions">
-                    <button type="submit" class="btn-primary" style="width: auto;">حفظ</button>
+                    <button type="submit" class="btn-primary" style="width: auto;">حفظ بـ رصيد 0</button>
                     <button type="button" class="btn-danger" id="btn-close-modal">إلغاء</button>
                 </div>
             </form>
