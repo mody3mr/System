@@ -22,7 +22,7 @@
         .input-group input, .input-group select { width: 100%; padding: 10px 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; outline: none; }
         .btn-primary { width: 100%; padding: 12px; background-color: #3498db; color: #fff; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary:hover { background-color: #2980b9; }
-        .btn-danger { background-color: #e74c3c; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+        .btn-danger { background-color: #e74c3c; color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-family: 'Cairo'; }
         .btn-danger:hover { background-color: #c0392b; }
         .dashboard-wrapper { display: flex; min-height: 100vh; }
         .sidebar { width: 250px; background-color: #2c3e50; color: #fff; display: flex; flex-direction: column; transition: all 0.3s; }
@@ -106,6 +106,7 @@
                 <li><a href="#" id="nav-purchases"><i class="fas fa-shopping-bag"></i> عمليات الشراء</a></li>
                 <li><a href="#" id="nav-inventory"><i class="fas fa-box"></i> المخزون</a></li>
                 <li><a href="#" id="nav-products"><i class="fas fa-tags"></i> المنتجات</a></li>
+                <li><a href="#" id="nav-categories"><i class="fas fa-list"></i> التصنيفات</a></li>
                 <li class="logout-link"><a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> تسجيل خروج</a></li>
             </ul>
         </aside>
@@ -150,7 +151,7 @@
                     </div>
                 </div>
 
-                <!-- 2. المنتجات (فقط بيانات المنتج وسعره، بدون كميات) -->
+                <!-- 2. المنتجات -->
                 <div id="section-products" class="dashboard-section-content" style="display: none;">
                     <div class="section-header">
                         <h2><i class="fas fa-tags"></i> دليل المنتجات</h2>
@@ -164,6 +165,7 @@
                                     <th>اسم المنتج</th>
                                     <th>التصنيف</th>
                                     <th>سعر البيع</th>
+                                    <th>إجراء</th>
                                 </tr>
                             </thead>
                             <tbody id="products-table-body"></tbody>
@@ -171,7 +173,7 @@
                     </div>
                 </div>
 
-                <!-- 3. المخزون (الكميات وأرصدة المنتجات فقط) -->
+                <!-- 3. المخزون -->
                 <div id="section-inventory" class="dashboard-section-content" style="display: none;">
                     <div class="section-header">
                         <h2><i class="fas fa-box"></i> أرصدة المخزون</h2>
@@ -191,7 +193,27 @@
                     </div>
                 </div>
 
-                <!-- 4. المبيعات -->
+                <!-- 4. التصنيفات (جديد) -->
+                <div id="section-categories" class="dashboard-section-content" style="display: none;">
+                    <div class="section-header">
+                        <h2><i class="fas fa-list"></i> إدارة التصنيفات</h2>
+                        <button class="btn-primary" id="btn-open-add-category" style="width: auto; padding: 10px 20px;">+ إضافة تصنيف</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>اسم التصنيف</th>
+                                    <th>وصف التصنيف</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categories-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 5. المبيعات -->
                 <div id="section-sales" class="dashboard-section-content" style="display: none;">
                     <div class="section-header">
                         <h2><i class="fas fa-shopping-cart"></i> إنشاء فاتورة بيع (صرف من المخزن)</h2>
@@ -224,7 +246,7 @@
                     </div>
                 </div>
 
-                <!-- 5. المشتريات -->
+                <!-- 6. المشتريات -->
                 <div id="section-purchases" class="dashboard-section-content" style="display: none;">
                     <div class="section-header">
                         <h2><i class="fas fa-shopping-bag"></i> تسجيل فاتورة شراء (إضافة للمخزن)</h2>
@@ -269,18 +291,38 @@
         </main>
     </div>
 
-    <!-- نافذة إضافة منتج (تمت إزالة الكمية منها، يبدأ بـ صفر أوتوماتيك) -->
+    <!-- نافذة إضافة منتج -->
     <div id="modal-add-product" class="modal-overlay">
         <div class="modal-content">
             <h3>تعريف منتج جديد</h3>
             <form id="form-add-product">
                 <div class="input-group"><label>كود المنتج</label><input type="text" id="prod-code" required></div>
                 <div class="input-group"><label>الاسم</label><input type="text" id="prod-name" required></div>
-                <div class="input-group"><label>التصنيف</label><input type="text" id="prod-category" required></div>
+                <div class="input-group">
+                    <label>التصنيف</label>
+                    <select id="prod-category" required>
+                        <option value="">جاري التحميل...</option>
+                    </select>
+                </div>
                 <div class="input-group"><label>سعر البيع الافتراضي</label><input type="number" id="prod-price" required></div>
                 <div class="modal-actions">
                     <button type="submit" class="btn-primary" style="width: auto;">حفظ بـ رصيد 0</button>
-                    <button type="button" class="btn-danger" id="btn-close-modal">إلغاء</button>
+                    <button type="button" class="btn-danger" id="btn-close-prod-modal" style="padding: 10px 15px;">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة تصنيف -->
+    <div id="modal-add-category" class="modal-overlay">
+        <div class="modal-content">
+            <h3>إضافة تصنيف جديد</h3>
+            <form id="form-add-category">
+                <div class="input-group"><label>اسم التصنيف</label><input type="text" id="cat-name" required></div>
+                <div class="input-group"><label>وصف التصنيف (اختياري)</label><input type="text" id="cat-desc"></div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-primary" style="width: auto;">حفظ التصنيف</button>
+                    <button type="button" class="btn-danger" id="btn-close-cat-modal" style="padding: 10px 15px;">إلغاء</button>
                 </div>
             </form>
         </div>
