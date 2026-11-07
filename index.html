@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة المخازن والمبيعات</title>
+    <!-- مكتبة الأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ملف التنسيق -->
+    <link rel="stylesheet" href="style.css">
+    <!-- مكتبة المخططات البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- ================= شاشة تسجيل الدخول ================= -->
+    <div id="login-section" class="login-container">
+        <div class="login-box">
+            <h2>تسجيل الدخول للنظام</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="email">البريد الإلكتروني</label>
+                    <input type="email" id="email" placeholder="أدخل بريدك الإلكتروني" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">كلمة المرور</label>
+                    <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
+                </div>
+                <!-- سيتم التحقق من الصلاحيات (أدمن / مشرف) عبر الجافاسكربت وفايربيس -->
+                <button type="submit" class="btn-primary">دخول</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= لوحة التحكم الأساسية ================= -->
+    <div id="dashboard-section" class="dashboard-wrapper" style="display: none;">
+        
+        <!-- القائمة الجانبية -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-boxes"></i> إدارة المخازن</h3>
+            </div>
+            <ul class="nav-links">
+                <li class="active"><a href="#" id="nav-home"><i class="fas fa-home"></i> الرئيسية</a></li>
+                <li><a href="#" id="nav-sales"><i class="fas fa-shopping-cart"></i> عمليات البيع</a></li>
+                <li><a href="#" id="nav-purchases"><i class="fas fa-shopping-bag"></i> عمليات الشراء</a></li>
+                <li><a href="#" id="nav-inventory"><i class="fas fa-box"></i> المخزون</a></li>
+                <li><a href="#" id="nav-products"><i class="fas fa-tags"></i> المنتجات</a></li>
+                <li><a href="#" id="nav-categories"><i class="fas fa-list"></i> التصنيفات</a></li>
+                <li><a href="#" id="nav-settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
+                <li class="logout-link"><a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> تسجيل خروج</a></li>
+            </ul>
+        </aside>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="main-content">
+            
+            <header class="top-bar">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="current-user-role">مرحباً، جاري التحميل...</span>
+                </div>
+            </header>
+
+            <div class="content-area">
+                
+                <!-- كروت الإحصائيات -->
+                <div class="stats-grid">
+                    
+                    <!-- إجمالي المبيعات -->
+                    <div class="stat-card">
+                        <h4>إجمالي المبيعات</h4>
+                        <div class="card-values">
+                            <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="sales-green">0</span> ج.م</div>
+                            <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="sales-red">0</span> ج.م</div>
+                        </div>
+                    </div>
+
+                    <!-- إجمالي المشتريات -->
+                    <div class="stat-card">
+                        <h4>إجمالي المشتريات</h4>
+                        <div class="card-values">
+                            <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="purchases-green">0</span> ج.م</div>
+                            <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="purchases-red">0</span> ج.م</div>
+                        </div>
+                    </div>
+
+                    <!-- إجمالي الديون -->
+                    <div class="stat-card">
+                        <h4>إجمالي الديون</h4>
+                        <div class="card-values">
+                            <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="debts-green">0</span> ج.م</div>
+                            <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="debts-red">0</span> ج.م</div>
+                        </div>
+                    </div>
+
+                    <!-- إجمالي الأوردرات -->
+                    <div class="stat-card">
+                        <h4>إجمالي الأوردرات</h4>
+                        <div class="card-values">
+                            <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="orders-green">0</span></div>
+                            <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="orders-red">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- إجمالي الموظفين -->
+                    <div class="stat-card">
+                        <h4>إجمالي الموظفين</h4>
+                        <div class="card-values">
+                            <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="employees-green">0</span></div>
+                            <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="employees-red">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- إجمالي الموردين -->
+                    <div class="stat-card">
+                        <h4>إجمالي الموردين</h4>
+                        <div class="card-values">
+                            <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="suppliers-green">0</span></div>
+                            <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="suppliers-red">0</span></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- المخططات البيانية (Charts) -->
+                <div class="charts-grid">
+                    <div class="chart-box">
+                        <h3>مخطط عمليات البيع</h3>
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>مخطط عمليات الشراء</h3>
+                        <canvas id="purchasesChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- الفوتر -->
+            <footer class="main-footer">
+                © 2026 تم الإنشاء بواسطة | محمد عمرو ابراهيم
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- ملف الجافاسكربت الرئيسي -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
