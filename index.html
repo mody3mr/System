@@ -15,7 +15,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
         body { background-color: #f4f7f6; color: #333; }
 
-        /* ================= شاشة التحميل (جديد) ================= */
+        /* شاشة التحميل */
         .loading-container {
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             height: 100vh; background-color: #2c3e50; color: #fff; position: fixed;
@@ -27,7 +27,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* ================= شاشة تسجيل الدخول ================= */
+        /* شاشة تسجيل الدخول */
         .login-container { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #2c3e50; }
         .login-box { background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center; }
         .login-box h2 { margin-bottom: 25px; color: #2c3e50; }
@@ -40,7 +40,7 @@
         .btn-danger { background-color: #e74c3c; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
         .btn-danger:hover { background-color: #c0392b; }
 
-        /* ================= لوحة التحكم الأساسية ================= */
+        /* لوحة التحكم الأساسية */
         .dashboard-wrapper { display: flex; min-height: 100vh; }
         .sidebar { width: 250px; background-color: #2c3e50; color: #fff; display: flex; flex-direction: column; transition: all 0.3s; }
         .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #34495e; }
@@ -81,206 +81,4 @@
         .data-table tr:hover { background-color: #f1f2f6; }
 
         /* نافذة منبثقة (Modal) */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: #fff; padding: 30px; border-radius: 10px; width: 100%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .modal-content h3 { margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-        
-        .main-footer { background: #fff; text-align: center; padding: 15px; border-top: 1px solid #ddd; font-weight: 600; color: #7f8c8d; }
-    </style>
-</head>
-<body>
-
-    <!-- شاشة التحميل -->
-    <div id="loading-screen" class="loading-container">
-        <div class="loader"></div>
-        <h3>جاري تحميل النظام...</h3>
-    </div>
-
-    <!-- شاشة تسجيل الدخول (مخفية افتراضياً لحين التأكد من حالة المستخدم) -->
-    <div id="login-section" class="login-container" style="display: none;">
-        <div class="login-box">
-            <h2>تسجيل الدخول للنظام</h2>
-            <form id="login-form">
-                <div class="input-group">
-                    <label for="email">البريد الإلكتروني</label>
-                    <input type="email" id="email" placeholder="أدخل بريدك الإلكتروني" required>
-                </div>
-                <div class="input-group">
-                    <label for="password">كلمة المرور</label>
-                    <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
-                </div>
-                <button type="submit" class="btn-primary">دخول</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- لوحة التحكم الأساسية -->
-    <div id="dashboard-section" class="dashboard-wrapper" style="display: none;">
-        
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h3><i class="fas fa-boxes"></i> إدارة المخازن</h3>
-            </div>
-            <ul class="nav-links">
-                <li class="active"><a href="#" id="nav-home"><i class="fas fa-home"></i> الرئيسية</a></li>
-                <li><a href="#" id="nav-sales"><i class="fas fa-shopping-cart"></i> عمليات البيع</a></li>
-                <li><a href="#" id="nav-purchases"><i class="fas fa-shopping-bag"></i> عمليات الشراء</a></li>
-                <li><a href="#" id="nav-inventory"><i class="fas fa-box"></i> المخزون</a></li>
-                <li><a href="#" id="nav-products"><i class="fas fa-tags"></i> المنتجات</a></li>
-                <li><a href="#" id="nav-categories"><i class="fas fa-list"></i> التصنيفات</a></li>
-                <li><a href="#" id="nav-settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
-                <li class="logout-link"><a href="#" id="nav-logout"><i class="fas fa-sign-out-alt"></i> تسجيل خروج</a></li>
-            </ul>
-        </aside>
-
-        <main class="main-content">
-            
-            <header class="top-bar">
-                <div class="user-info">
-                    <i class="fas fa-user-circle"></i>
-                    <span id="current-user-role">مرحباً...</span>
-                </div>
-            </header>
-
-            <div class="content-area">
-                
-                <!-- 1. قسم الرئيسية -->
-                <div id="section-home" class="dashboard-section-content">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <h4>إجمالي المبيعات</h4>
-                            <div class="card-values">
-                                <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="sales-green">0</span> ج.م</div>
-                                <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="sales-red">0</span> ج.م</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <h4>إجمالي المشتريات</h4>
-                            <div class="card-values">
-                                <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="purchases-green">0</span> ج.م</div>
-                                <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="purchases-red">0</span> ج.م</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <h4>إجمالي الديون</h4>
-                            <div class="card-values">
-                                <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="debts-green">0</span> ج.م</div>
-                                <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="debts-red">0</span> ج.م</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <h4>إجمالي الأوردرات</h4>
-                            <div class="card-values">
-                                <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="orders-green">0</span></div>
-                                <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="orders-red">0</span></div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <h4>إجمالي الموظفين</h4>
-                            <div class="card-values">
-                                <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="employees-green">0</span></div>
-                                <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="employees-red">0</span></div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <h4>إجمالي الموردين</h4>
-                            <div class="card-values">
-                                <div class="val-in text-green"><i class="fas fa-arrow-up"></i> <span id="suppliers-green">0</span></div>
-                                <div class="val-out text-red"><i class="fas fa-arrow-down"></i> <span id="suppliers-red">0</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="charts-grid">
-                        <div class="chart-box">
-                            <h3>مخطط عمليات البيع</h3>
-                            <canvas id="salesChart"></canvas>
-                        </div>
-                        <div class="chart-box">
-                            <h3>مخطط عمليات الشراء</h3>
-                            <canvas id="purchasesChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2. قسم المنتجات -->
-                <div id="section-products" class="dashboard-section-content" style="display: none;">
-                    <div class="section-header">
-                        <h2><i class="fas fa-tags"></i> إدارة المنتجات</h2>
-                        <button class="btn-primary" id="btn-open-add-product" style="width: auto; padding: 10px 20px;">+ إضافة منتج جديد</button>
-                    </div>
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>كود المنتج</th>
-                                    <th>اسم المنتج</th>
-                                    <th>التصنيف</th>
-                                    <th>الكمية بالمخزن</th>
-                                    <th>سعر البيع</th>
-                                </tr>
-                            </thead>
-                            <tbody id="products-table-body">
-                                <tr>
-                                    <td colspan="5" style="text-align: center;">جاري تحميل المنتجات...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 3. قسم المبيعات -->
-                <div id="section-sales" class="dashboard-section-content" style="display: none;">
-                    <h2><i class="fas fa-shopping-cart"></i> عمليات البيع</h2>
-                </div>
-
-                <!-- 4. قسم المشتريات -->
-                <div id="section-purchases" class="dashboard-section-content" style="display: none;">
-                    <h2><i class="fas fa-shopping-bag"></i> عمليات الشراء</h2>
-                </div>
-
-            </div>
-
-            <footer class="main-footer">
-                © 2026 تم الإنشاء بواسطة | محمد عمرو ابراهيم
-            </footer>
-        </main>
-    </div>
-
-    <!-- نافذة إضافة منتج جديد -->
-    <div id="modal-add-product" class="modal-overlay">
-        <div class="modal-content">
-            <h3>إضافة منتج جديد</h3>
-            <form id="form-add-product">
-                <div class="input-group">
-                    <label>كود المنتج</label>
-                    <input type="text" id="prod-code" required>
-                </div>
-                <div class="input-group">
-                    <label>اسم المنتج</label>
-                    <input type="text" id="prod-name" required>
-                </div>
-                <div class="input-group">
-                    <label>التصنيف</label>
-                    <input type="text" id="prod-category" required>
-                </div>
-                <div class="input-group">
-                    <label>الكمية المبدئية</label>
-                    <input type="number" id="prod-qty" required>
-                </div>
-                <div class="input-group">
-                    <label>سعر البيع (ج.م)</label>
-                    <input type="number" id="prod-price" required>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit" class="btn-primary" style="width: auto;">حفظ المنتج</button>
-                    <button type="button" class="btn-danger" id="btn-close-modal">إلغاء</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script type="module" src="app.js"></script>
-</body>
-</html>
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-
