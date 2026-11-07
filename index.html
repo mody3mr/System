@@ -15,6 +15,18 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
         body { background-color: #f4f7f6; color: #333; }
 
+        /* ================= شاشة التحميل (جديد) ================= */
+        .loading-container {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 100vh; background-color: #2c3e50; color: #fff; position: fixed;
+            width: 100%; top: 0; left: 0; z-index: 9999;
+        }
+        .loader {
+            border: 5px solid #34495e; border-top: 5px solid #3498db; border-radius: 50%;
+            width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         /* ================= شاشة تسجيل الدخول ================= */
         .login-container { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #2c3e50; }
         .login-box { background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center; }
@@ -79,8 +91,14 @@
 </head>
 <body>
 
-    <!-- شاشة تسجيل الدخول -->
-    <div id="login-section" class="login-container">
+    <!-- شاشة التحميل -->
+    <div id="loading-screen" class="loading-container">
+        <div class="loader"></div>
+        <h3>جاري تحميل النظام...</h3>
+    </div>
+
+    <!-- شاشة تسجيل الدخول (مخفية افتراضياً لحين التأكد من حالة المستخدم) -->
+    <div id="login-section" class="login-container" style="display: none;">
         <div class="login-box">
             <h2>تسجيل الدخول للنظام</h2>
             <form id="login-form">
@@ -121,7 +139,7 @@
             <header class="top-bar">
                 <div class="user-info">
                     <i class="fas fa-user-circle"></i>
-                    <span id="current-user-role">مرحباً، جاري التحميل...</span>
+                    <span id="current-user-role">مرحباً...</span>
                 </div>
             </header>
 
@@ -230,7 +248,7 @@
         </main>
     </div>
 
-    <!-- نافذة إضافة منتج جديد (Modal) -->
+    <!-- نافذة إضافة منتج جديد -->
     <div id="modal-add-product" class="modal-overlay">
         <div class="modal-content">
             <h3>إضافة منتج جديد</h3>
