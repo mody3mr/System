@@ -1,9 +1,9 @@
-// استدعاء مكتبات فايربيس (تأكد من تعديل الروابط للإصدار الذي تستخدمه إذا لزم الأمر)
+// استدعاء مكتبات فايربيس الأساسية وتحديثات قواعد البيانات
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-// 1. إعدادات فايربيس (ضع إعدادات مشروعك هنا)
+// ⚠️ ضع إعدادات مشروعك الخاصة بفايربيس هنا ⚠️
 const firebaseConfig = {
   apiKey: "AIzaSyDQjq4pJ_zbPS8j05f7pENHUZNW2EduaIY",
   authDomain: "system-ca72d.firebaseapp.com",
@@ -18,32 +18,58 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// عناصر الواجهة
+// عناصر الشاشة الأساسية
 const loginSection = document.getElementById('login-section');
 const dashboardSection = document.getElementById('dashboard-section');
 const loginForm = document.getElementById('login-form');
 const currentUserRole = document.getElementById('current-user-role');
 const logoutBtn = document.getElementById('nav-logout');
 
-// 2. مراقبة حالة تسجيل الدخول والصلاحيات
+// ================= نظام التنقل بين الصفحات (SPA) =================
+const navLinks = {
+    home: document.getElementById('nav-home'),
+    products: document.getElementById('nav-products'),
+    sales: document.getElementById('nav-sales'),
+    purchases: document.getElementById('nav-purchases')
+};
+
+const sections = {
+    home: document.getElementById('section-home'),
+    products: document.getElementById('section-products'),
+    sales: document.getElementById('section-sales'),
+    purchases: document.getElementById('section-purchases')
+};
+
+function switchSection(activeKey) {
+    Object.keys(sections).forEach(key => {
+        if(sections[key]) sections[key].style.display = 'none';
+        if(navLinks[key]) navLinks[key].parentElement.classList.remove('active');
+    });
+    if(sections[activeKey]) sections[activeKey].style.display = 'block';
+    if(navLinks[activeKey]) navLinks[activeKey].parentElement.classList.add('active');
+}
+
+Object.keys(navLinks).forEach(key => {
+    if(navLinks[key]) {
+        navLinks[key].addEventListener('click', (e) => {
+            e.preventDefault();
+            switchSection(key);
+        });
+    }
+});
+
+// ================= نظام تسجيل الدخول والصلاحيات =================
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // إخفاء تسجيل الدخول وإظهار الداشبورد
         loginSection.style.display = 'none';
         dashboardSection.style.display = 'flex';
         
-        // جلب صلاحية المستخدم من Firestore (بافتراض وجود كوليكشن users)
         try {
             const userDoc = await getDoc(doc(db, "users", user.uid));
             if (userDoc.exists()) {
                 const userData = userDoc.data();
                 const role = userData.role === 'admin' ? 'أدمن' : 'مشرف';
                 currentUserRole.textContent = `مرحباً، ${userData.name || 'المستخدم'} (${role})`;
-                
-                // هنا يمكنك إخفاء بعض القوائم لو كان المستخدم "مشرف" وليس "أدمن"
-                if (userData.role !== 'admin') {
-                    document.getElementById('nav-settings').style.display = 'none'; // مثال: إخفاء الإعدادات
-                }
             } else {
                 currentUserRole.textContent = `مرحباً بك`;
             }
@@ -51,82 +77,122 @@ onAuthStateChanged(auth, async (user) => {
             console.error("خطأ في جلب الصلاحيات:", error);
         }
 
-        // رسم المخططات البيانية
         initCharts();
-        // يمكنك هنا استدعاء دوال أخرى لجلب الإحصائيات والأرقام وملء الكروت
-        
+        loadProducts(); // تشغيل جلب المنتجات تلقائياً بعد الدخول
     } else {
-        // إظهار تسجيل الدخول وإخفاء الداشبورد
         loginSection.style.display = 'flex';
         dashboardSection.style.display = 'none';
     }
 });
 
-// 3. تسجيل الدخول
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
     signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log("تم تسجيل الدخول بنجاح");
-        })
-        .catch((error) => {
-            alert("خطأ في تسجيل الدخول: " + error.message);
-        });
+        .catch((error) => alert("خطأ في تسجيل الدخول: " + error.message));
 });
 
-// 4. تسجيل الخروج
 logoutBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    signOut(auth).then(() => {
-        console.log("تم تسجيل الخروج");
-    }).catch((error) => {
-        console.error("خطأ أثناء تسجيل الخروج:", error);
-    });
+    signOut(auth).catch((error) => console.error("خطأ أثناء تسجيل الخروج:", error));
 });
 
-// 5. المخططات البيانية (Chart.js)
+
+// ================= إضافة وعرض المنتجات (جديد) =================
+const modalAddProduct = document.getElementById('modal-add-product');
+const btnOpenAddProduct = document.getElementById('btn-open-add-product');
+const btnCloseModal = document.getElementById('btn-close-modal');
+const formAddProduct = document.getElementById('form-add-product');
+const productsTableBody = document.getElementById('products-table-body');
+
+// فتح وإغلاق النافذة
+btnOpenAddProduct.addEventListener('click', () => modalAddProduct.style.display = 'flex');
+btnCloseModal.addEventListener('click', () => modalAddProduct.style.display = 'none');
+
+// حفظ المنتج في فايربيس
+formAddProduct.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // جلب البيانات من الفورم
+    const code = document.getElementById('prod-code').value;
+    const name = document.getElementById('prod-name').value;
+    const category = document.getElementById('prod-category').value;
+    const qty = parseInt(document.getElementById('prod-qty').value);
+    const price = parseFloat(document.getElementById('prod-price').value);
+
+    try {
+        // إضافة البيانات لـ Collection اسمها products
+        await addDoc(collection(db, "products"), {
+            code: code,
+            name: name,
+            category: category,
+            quantity: qty,
+            price: price,
+            createdAt: new Date()
+        });
+        
+        // إغلاق النافذة وتفريغ الحقول
+        formAddProduct.reset();
+        modalAddProduct.style.display = 'none';
+        alert("تمت إضافة المنتج بنجاح!");
+    } catch (error) {
+        console.error("خطأ أثناء إضافة المنتج: ", error);
+        alert("حدث خطأ أثناء حفظ المنتج.");
+    }
+});
+
+// جلب المنتجات وعرضها في الجدول لحظياً (Realtime)
+function loadProducts() {
+    // onSnapshot بتجيب البيانات وتحدث الجدول أوتوماتيك لو حصل أي تغيير
+    onSnapshot(collection(db, "products"), (snapshot) => {
+        productsTableBody.innerHTML = ''; // تفريغ الجدول قبل إضافة البيانات الجديدة
+        
+        if(snapshot.empty) {
+            productsTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد منتجات مسجلة حالياً.</td></tr>';
+            return;
+        }
+
+        snapshot.forEach((doc) => {
+            const product = doc.data();
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${product.code}</td>
+                <td>${product.name}</td>
+                <td>${product.category}</td>
+                <td>${product.quantity}</td>
+                <td>${product.price} ج.م</td>
+            `;
+            productsTableBody.appendChild(row);
+        });
+    });
+}
+
+// ================= المخططات البيانية (Charts) =================
 function initCharts() {
-    // مخطط عمليات البيع
     const salesCtx = document.getElementById('salesChart').getContext('2d');
     new Chart(salesCtx, {
         type: 'bar',
         data: {
             labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-            datasets: [{
-                label: 'مبيعات محصلة (أخضر)',
-                data: [12000, 19000, 3000, 5000, 20000, 30000],
-                backgroundColor: '#2ecc71'
-            }, {
-                label: 'مبيعات آجلة/ديون (أحمر)',
-                data: [2000, 3000, 1000, 1500, 2000, 5000],
-                backgroundColor: '#e74c3c'
-            }]
+            datasets: [
+                { label: 'محصل (أخضر)', data: [12000, 19000, 3000, 5000, 20000, 30000], backgroundColor: '#2ecc71' }, 
+                { label: 'آجل (أحمر)', data: [2000, 3000, 1000, 1500, 2000, 5000], backgroundColor: '#e74c3c' }
+            ]
         },
         options: { responsive: true }
     });
 
-    // مخطط عمليات الشراء
     const purchasesCtx = document.getElementById('purchasesChart').getContext('2d');
     new Chart(purchasesCtx, {
         type: 'line',
         data: {
             labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-            datasets: [{
-                label: 'مشتريات مدفوعة (أخضر)',
-                data: [8000, 15000, 5000, 10000, 12000, 25000],
-                borderColor: '#2ecc71',
-                fill: false,
-                tension: 0.1
-            }, {
-                label: 'مشتريات آجلة/ديون (أحمر)',
-                data: [4000, 2000, 3000, 5000, 8000, 10000],
-                borderColor: '#e74c3c',
-                fill: false,
-                tension: 0.1
-            }]
+            datasets: [
+                { label: 'مدفوع (أخضر)', data: [8000, 15000, 5000, 10000, 12000, 25000], borderColor: '#2ecc71', fill: false }, 
+                { label: 'آجل (أحمر)', data: [4000, 2000, 3000, 5000, 8000, 10000], borderColor: '#e74c3c', fill: false }
+            ]
         },
         options: { responsive: true }
     });
