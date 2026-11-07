@@ -1,16 +1,16 @@
-// استدعاء مكتبات فايربيس الأساسية وتحديثات قواعد البيانات
+// استدعاء مكتبات فايربيس الأساسية
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 // ⚠️ ضع إعدادات مشروعك الخاصة بفايربيس هنا ⚠️
 const firebaseConfig = {
-  apiKey: "AIzaSyDQjq4pJ_zbPS8j05f7pENHUZNW2EduaIY",
-  authDomain: "system-ca72d.firebaseapp.com",
-  projectId: "system-ca72d",
-  storageBucket: "system-ca72d.firebasestorage.app",
-  messagingSenderId: "48224129684",
-  appId: "1:48224129684:web:498d7055a253196f831a81"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
 
 // تهيئة فايربيس
@@ -19,6 +19,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // عناصر الشاشة الأساسية
+const loadingScreen = document.getElementById('loading-screen'); // تم إضافة شاشة التحميل
 const loginSection = document.getElementById('login-section');
 const dashboardSection = document.getElementById('dashboard-section');
 const loginForm = document.getElementById('login-form');
@@ -60,6 +61,9 @@ Object.keys(navLinks).forEach(key => {
 
 // ================= نظام تسجيل الدخول والصلاحيات =================
 onAuthStateChanged(auth, async (user) => {
+    // إخفاء شاشة التحميل بمجرد ما فايربيس يحدد الحالة
+    loadingScreen.style.display = 'none';
+
     if (user) {
         loginSection.style.display = 'none';
         dashboardSection.style.display = 'flex';
@@ -78,7 +82,7 @@ onAuthStateChanged(auth, async (user) => {
         }
 
         initCharts();
-        loadProducts(); // تشغيل جلب المنتجات تلقائياً بعد الدخول
+        loadProducts(); // جلب المنتجات تلقائياً بعد الدخول
     } else {
         loginSection.style.display = 'flex';
         dashboardSection.style.display = 'none';
@@ -100,22 +104,19 @@ logoutBtn.addEventListener('click', (e) => {
 });
 
 
-// ================= إضافة وعرض المنتجات (جديد) =================
+// ================= إضافة وعرض المنتجات =================
 const modalAddProduct = document.getElementById('modal-add-product');
 const btnOpenAddProduct = document.getElementById('btn-open-add-product');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const formAddProduct = document.getElementById('form-add-product');
 const productsTableBody = document.getElementById('products-table-body');
 
-// فتح وإغلاق النافذة
 btnOpenAddProduct.addEventListener('click', () => modalAddProduct.style.display = 'flex');
 btnCloseModal.addEventListener('click', () => modalAddProduct.style.display = 'none');
 
-// حفظ المنتج في فايربيس
 formAddProduct.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // جلب البيانات من الفورم
     const code = document.getElementById('prod-code').value;
     const name = document.getElementById('prod-name').value;
     const category = document.getElementById('prod-category').value;
@@ -123,7 +124,6 @@ formAddProduct.addEventListener('submit', async (e) => {
     const price = parseFloat(document.getElementById('prod-price').value);
 
     try {
-        // إضافة البيانات لـ Collection اسمها products
         await addDoc(collection(db, "products"), {
             code: code,
             name: name,
@@ -133,7 +133,6 @@ formAddProduct.addEventListener('submit', async (e) => {
             createdAt: new Date()
         });
         
-        // إغلاق النافذة وتفريغ الحقول
         formAddProduct.reset();
         modalAddProduct.style.display = 'none';
         alert("تمت إضافة المنتج بنجاح!");
@@ -143,11 +142,9 @@ formAddProduct.addEventListener('submit', async (e) => {
     }
 });
 
-// جلب المنتجات وعرضها في الجدول لحظياً (Realtime)
 function loadProducts() {
-    // onSnapshot بتجيب البيانات وتحدث الجدول أوتوماتيك لو حصل أي تغيير
     onSnapshot(collection(db, "products"), (snapshot) => {
-        productsTableBody.innerHTML = ''; // تفريغ الجدول قبل إضافة البيانات الجديدة
+        productsTableBody.innerHTML = ''; 
         
         if(snapshot.empty) {
             productsTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد منتجات مسجلة حالياً.</td></tr>';
@@ -170,9 +167,18 @@ function loadProducts() {
 }
 
 // ================= المخططات البيانية (Charts) =================
+let salesChartInstance = null;
+let purchasesChartInstance = null;
+
 function initCharts() {
-    const salesCtx = document.getElementById('salesChart').getContext('2d');
-    new Chart(salesCtx, {
+    const salesCtx = document.getElementById('salesChart');
+    const purchasesCtx = document.getElementById('purchasesChart');
+
+    // تدمير الشارت القديم لو موجود عشان ميعملش تداخل عند تسجيل الدخول أكتر من مرة
+    if(salesChartInstance) salesChartInstance.destroy();
+    if(purchasesChartInstance) purchasesChartInstance.destroy();
+
+    salesChartInstance = new Chart(salesCtx, {
         type: 'bar',
         data: {
             labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
@@ -184,8 +190,7 @@ function initCharts() {
         options: { responsive: true }
     });
 
-    const purchasesCtx = document.getElementById('purchasesChart').getContext('2d');
-    new Chart(purchasesCtx, {
+    purchasesChartInstance = new Chart(purchasesCtx, {
         type: 'line',
         data: {
             labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
