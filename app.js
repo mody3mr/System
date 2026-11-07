@@ -4,12 +4,12 @@ import { getFirestore, doc, getDoc, collection, addDoc, onSnapshot, updateDoc } 
 
 // ⚠️ ضع إعدادات مشروعك الحقيقية هنا ⚠️
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDQjq4pJ_zbPS8j05f7pENHUZNW2EduaIY",
+  authDomain: "system-ca72d.firebaseapp.com",
+  projectId: "system-ca72d",
+  storageBucket: "system-ca72d.firebasestorage.app",
+  messagingSenderId: "48224129684",
+  appId: "1:48224129684:web:498d7055a253196f831a81"
 };
 
 const app = initializeApp(firebaseConfig);
