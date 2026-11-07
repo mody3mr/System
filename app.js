@@ -4,12 +4,12 @@ import { getFirestore, doc, getDoc, collection, addDoc, onSnapshot, updateDoc } 
 
 // ⚠️ ضع إعدادات مشروعك الحقيقية هنا ⚠️
 const firebaseConfig = {
-  apiKey: "AIzaSyDQjq4pJ_zbPS8j05f7pENHUZNW2EduaIY",
-  authDomain: "system-ca72d.firebaseapp.com",
-  projectId: "system-ca72d",
-  storageBucket: "system-ca72d.firebasestorage.app",
-  messagingSenderId: "48224129684",
-  appId: "1:48224129684:web:498d7055a253196f831a81"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -24,12 +24,14 @@ const dashboardSection = document.getElementById('dashboard-section');
 const navLinks = {
     home: document.getElementById('nav-home'),
     products: document.getElementById('nav-products'),
+    inventory: document.getElementById('nav-inventory'), // زر المخزون الجديد
     sales: document.getElementById('nav-sales'),
     purchases: document.getElementById('nav-purchases')
 };
 const sections = {
     home: document.getElementById('section-home'),
     products: document.getElementById('section-products'),
+    inventory: document.getElementById('section-inventory'), // قسم المخزون الجديد
     sales: document.getElementById('section-sales'),
     purchases: document.getElementById('section-purchases')
 };
@@ -49,8 +51,8 @@ onAuthStateChanged(auth, async (user) => {
         dashboardSection.style.display = 'flex';
         document.getElementById('current-user-role').textContent = `مرحباً بك في النظام`;
         initCharts();
-        loadProducts();
-        loadDashboardStats(); // تحميل إحصائيات الصفحة الرئيسية
+        loadProductsAndInventory();
+        loadDashboardStats(); 
     } else {
         loginSection.style.display = 'flex';
         dashboardSection.style.display = 'none';
@@ -66,15 +68,17 @@ document.getElementById('nav-logout').addEventListener('click', (e) => {
     e.preventDefault(); signOut(auth);
 });
 
-// ================= إدارة المنتجات =================
+// ================= إدارة المنتجات والمخزون =================
 let globalProducts = [];
 const productsTableBody = document.getElementById('products-table-body');
+const inventoryTableBody = document.getElementById('inventory-table-body');
 const saleSelect = document.getElementById('sale-product-select');
 const purchaseSelect = document.getElementById('purchase-product-select');
 
 document.getElementById('btn-open-add-product').addEventListener('click', () => document.getElementById('modal-add-product').style.display='flex');
 document.getElementById('btn-close-modal').addEventListener('click', () => document.getElementById('modal-add-product').style.display='none');
 
+// تسجيل منتج جديد (الكمية الافتراضية = صفر)
 document.getElementById('form-add-product').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
@@ -82,27 +86,37 @@ document.getElementById('form-add-product').addEventListener('submit', async (e)
             code: document.getElementById('prod-code').value,
             name: document.getElementById('prod-name').value,
             category: document.getElementById('prod-category').value,
-            quantity: parseInt(document.getElementById('prod-qty').value),
             price: parseFloat(document.getElementById('prod-price').value),
+            quantity: 0, // الرصيد يبدأ بصفر أوتوماتيك
             createdAt: new Date()
         });
         document.getElementById('form-add-product').reset();
         document.getElementById('modal-add-product').style.display='none';
-        alert("تم الحفظ!");
-    } catch (err) { alert("حدث خطأ"); }
+        alert("تم حفظ المنتج بنجاح برصيد 0. يرجى تسجيل فاتورة شراء لزيادة الرصيد.");
+    } catch (err) { alert("حدث خطأ أثناء حفظ المنتج"); }
 });
 
-function loadProducts() {
+// جلب المنتجات للمنتجات وللمخزون في نفس الوقت
+function loadProductsAndInventory() {
     onSnapshot(collection(db, "products"), (snapshot) => {
         productsTableBody.innerHTML = ''; 
+        inventoryTableBody.innerHTML = '';
         saleSelect.innerHTML = '<option value="">اختر المنتج...</option>';
         purchaseSelect.innerHTML = '<option value="">اختر المنتج...</option>';
         globalProducts = [];
         
         snapshot.forEach((doc) => {
             const p = doc.data(); p.id = doc.id; globalProducts.push(p);
-            productsTableBody.innerHTML += `<tr><td>${p.code}</td><td>${p.name}</td><td>${p.quantity}</td><td>${p.price} ج.م</td></tr>`;
-            purchaseSelect.innerHTML += `<option value="${p.id}">${p.name} (متوفر: ${p.quantity})</option>`;
+            
+            // 1. جدول المنتجات (بدون كمية)
+            productsTableBody.innerHTML += `<tr><td>${p.code}</td><td>${p.name}</td><td>${p.category}</td><td>${p.price} ج.م</td></tr>`;
+            
+            // 2. جدول المخزون (يركز على الكميات فقط)
+            let stockBadge = p.quantity > 10 ? '<span class="stock-badge stock-good">متوفر</span>' : (p.quantity > 0 ? '<span class="stock-badge stock-warning">أوشك على الانتهاء</span>' : '<span class="stock-badge stock-danger">نفذ من المخزن</span>');
+            inventoryTableBody.innerHTML += `<tr><td>${p.code}</td><td><strong>${p.name}</strong></td><td style="font-size:18px; font-weight:bold;">${p.quantity}</td><td>${stockBadge}</td></tr>`;
+            
+            // قوائم الشراء والبيع
+            purchaseSelect.innerHTML += `<option value="${p.id}">${p.name} (متوفر حالياً: ${p.quantity})</option>`;
             if (p.quantity > 0) saleSelect.innerHTML += `<option value="${p.id}">${p.name} (متوفر: ${p.quantity})</option>`;
         });
     });
@@ -114,6 +128,11 @@ document.getElementById('btn-add-to-cart').addEventListener('click', () => {
     const pId = saleSelect.value; const qty = parseInt(document.getElementById('sale-qty').value);
     if(!pId || qty<=0) return;
     const p = globalProducts.find(x => x.id === pId);
+    
+    // منع البيع بأكثر من المتاح في المخزن
+    const currentInCart = salesCart.find(i => i.id === pId)?.qty || 0;
+    if ((currentInCart + qty) > p.quantity) return alert("الكمية المطلوبة تتخطى رصيد المخزن المتاح!");
+
     salesCart.push({ id: p.id, name: p.name, price: p.price, qty: qty, total: p.price * qty });
     updateSalesUI();
 });
@@ -127,18 +146,19 @@ function updateSalesUI() {
     });
     document.getElementById('cart-total').textContent = tot;
 }
-window.updateSalesUI = updateSalesUI; // لتشغيل زر الحذف من الـ HTML مباشرة
+window.updateSalesUI = updateSalesUI;
 
 document.getElementById('btn-complete-sale').addEventListener('click', async () => {
     if(salesCart.length === 0) return;
     const totalSale = parseInt(document.getElementById('cart-total').textContent);
     await addDoc(collection(db, "sales"), { items: salesCart, total: totalSale, date: new Date() });
     
+    // الصرف من المخزن (-)
     for (const item of salesCart) {
         const pDb = globalProducts.find(x => x.id === item.id);
         await updateDoc(doc(db, "products", item.id), { quantity: pDb.quantity - item.qty });
     }
-    alert('تم البيع بنجاح!'); salesCart = []; updateSalesUI();
+    alert('تم البيع وتم صرف الكميات من المخزن بنجاح!'); salesCart = []; updateSalesUI(); document.getElementById('sale-qty').value = 1;
 });
 
 // ================= المشتريات (زيادة المخزون) =================
@@ -169,33 +189,30 @@ document.getElementById('btn-complete-purchase').addEventListener('click', async
     const totalPurchase = parseInt(document.getElementById('purchase-cart-total').textContent);
     await addDoc(collection(db, "purchases"), { items: purchaseCart, total: totalPurchase, date: new Date() });
     
+    // الإضافة للمخزن (+)
     for (const item of purchaseCart) {
         const pDb = globalProducts.find(x => x.id === item.id);
-        await updateDoc(doc(db, "products", item.id), { quantity: pDb.quantity + item.qty }); // هنا بنزود المخزون (+)
+        await updateDoc(doc(db, "products", item.id), { quantity: pDb.quantity + item.qty });
     }
-    alert('تم تسجيل المشتريات وزيادة المخزون!'); purchaseCart = []; updatePurchaseUI(); document.getElementById('purchase-cost').value = 0;
+    alert('تم الشراء وتم إضافة الكميات للمخزن بنجاح!'); purchaseCart = []; updatePurchaseUI(); document.getElementById('purchase-qty').value = 1; document.getElementById('purchase-cost').value = 0;
 });
 
 
 // ================= إحصائيات الصفحة الرئيسية الحية =================
 function loadDashboardStats() {
-    // حساب المبيعات
     onSnapshot(collection(db, "sales"), (snapshot) => {
         let totalSales = 0;
         snapshot.forEach(doc => totalSales += doc.data().total);
         document.getElementById('sales-green').textContent = totalSales;
     });
 
-    // حساب المشتريات
     onSnapshot(collection(db, "purchases"), (snapshot) => {
         let totalPurchases = 0;
         snapshot.forEach(doc => totalPurchases += doc.data().total);
-        // بنحط المصروفات في الكارت كفلوس خرجت (بالأخضر كمدفوعات أو أحمر، حسب رغبتك)
         document.getElementById('purchases-red').textContent = totalPurchases; 
     });
 }
 
-// ================= المخططات =================
 function initCharts() {
     new Chart(document.getElementById('salesChart'), { type: 'bar', data: { labels: ['الشهر الحالي'], datasets: [{ label: 'مبيعات', data: [5000], backgroundColor: '#2ecc71' }] }});
     new Chart(document.getElementById('purchasesChart'), { type: 'line', data: { labels: ['الشهر الحالي'], datasets: [{ label: 'مشتريات', data: [3000], borderColor: '#e74c3c' }] }});
